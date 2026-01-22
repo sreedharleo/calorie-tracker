@@ -20,24 +20,31 @@ if not os.path.exists(UPLOAD_DIR):
 
 @router.post("/food/analyze", response_model=list[schemas.FoodItemAnalysis])
 async def analyze_food_image(file: UploadFile = File(...), current_user: models.User = Depends(auth.get_current_user)):
-    # 1. Save file
+    # 1. Read file content once
+    content = await file.read()
+    
+    # 2. Save file
     file_extension = file.filename.split(".")[-1]
     filename = f"{uuid.uuid4()}.{file_extension}"
     file_path = os.path.join(UPLOAD_DIR, filename)
     
     with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+        buffer.write(content)
         
-    # 2. Process image (Mock for now)
-    # TODO: Call AI Model here
-    detected_foods = [
-        {"name": "Grilled Chicken", "calories": 165, "portion_size": "100g", "confidence_score": 0.95},
-        {"name": "Rice", "calories": 130, "portion_size": "100g", "confidence_score": 0.88},
-        {"name": "Broccoli", "calories": 55, "portion_size": "100g", "confidence_score": 0.92},
-    ]
-    
-    # Return mockup
-    return detected_foods
+    # 3. Process image with Gemini API
+    try:
+        # Call Gemini Service
+        from services import gemini
+        detected_foods = gemini.analyze_image(content)
+        
+        return detected_foods
+        
+    except Exception as e:
+        # Log error to file for debugging
+        with open("error.log", "a") as log:
+            log.write(f"[{datetime.datetime.now()}] Error analyzing image: {str(e)}\n")
+        print(f"Error analyzing image: {e}")
+        raise HTTPException(status_code=500, detail=f"Image analysis failed: {str(e)}")
 
 @router.post("/food/log", response_model=schemas.FoodLog)
 async def log_food(
