@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedLayout from './pages/ProtectedLayout';
+import Welcome from './pages/Welcome';
+import MealLogger from './pages/MealLogger';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Onboarding from './pages/Onboarding';
@@ -12,6 +14,7 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
+          <Route path="/welcome" element={<Welcome />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/onboarding" element={<Onboarding />} />
@@ -19,6 +22,7 @@ function App() {
           <Route element={<ProtectedLayout />}>
             <Route path="/" element={<Dashboard />} />
             <Route path="/scan" element={<ScanPage />} />
+            <Route path="/log-meal" element={<MealLogger />} />
             {/* Add more protected routes here */}
           </Route>
         </Routes>

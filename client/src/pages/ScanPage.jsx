@@ -1,190 +1,150 @@
-import { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import { Camera, Image as ImageIcon, X, Zap, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Camera, Upload, Check, X, Edit2 } from 'lucide-react';
 import api from '../api/axios';
+import Button from '../components/ui/Button';
+import Card from '../components/ui/Card';
 
-export default function ScanPage() {
-    const navigate = useNavigate();
-    const [image, setImage] = useState(null);
-    const [file, setFile] = useState(null);
+const ScanPage = () => {
+    const [imagePreview, setImagePreview] = useState(null);
+    const [selectedFile, setSelectedFile] = useState(null);
     const [analyzing, setAnalyzing] = useState(false);
-    const [results, setResults] = useState(null);
+    const fileInputRef = useRef(null);
+    const navigate = useNavigate();
 
-    const handleImageChange = (e) => {
-        const selectedFile = e.target.files[0];
-        if (selectedFile) {
-            setFile(selectedFile);
-            setImage(URL.createObjectURL(selectedFile));
-            // Auto analyze
-            analyzeImage(selectedFile);
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setSelectedFile(file);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImagePreview(reader.result);
+            };
+            reader.readAsDataURL(file);
         }
     };
 
-    const analyzeImage = async (imageFile) => {
+    const handleCameraClick = () => {
+        fileInputRef.current.click();
+    };
+
+    const handleAnalyze = async () => {
+        if (!selectedFile) return;
+
         setAnalyzing(true);
         const formData = new FormData();
-        formData.append('file', imageFile);
+        formData.append('file', selectedFile);
 
         try {
-            const res = await api.post('/food/analyze', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
+            const response = await api.post('/food/analyze', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
             });
-            // Add 'selected' property and default quantity/calories editing
-            const detected = res.data.map(item => ({
-                ...item,
-                selected: item.confidence_score > 0.8, // Auto-select high confidence
-                originalCalories: item.calories,
-                multiplier: 1
-            }));
-            setResults(detected);
-        } catch (err) {
-            console.error("Analysis failed", err);
-            alert("Failed to analyze image");
+            console.log("Analysis result:", response.data);
+            navigate('/log-meal', { state: { analyzedData: response.data, image: imagePreview } });
+        } catch (error) {
+            console.error("Analysis failed:", error);
+            alert("Failed to analyze image. Please try again.");
         } finally {
             setAnalyzing(false);
         }
     };
 
-    const toggleSelect = (index) => {
-        const newResults = [...results];
-        newResults[index].selected = !newResults[index].selected;
-        setResults(newResults);
-    };
-
-    const updateMultiplier = (index, value) => {
-        const newResults = [...results];
-        const item = newResults[index];
-        item.multiplier = parseFloat(value);
-        item.calories = Math.round(item.originalCalories * item.multiplier);
-        setResults(newResults);
-    }
-
-    const handleSave = async () => {
-        const selectedItems = results.filter(i => i.selected);
-        if (selectedItems.length === 0) return alert("Select at least one item");
-
-        try {
-            await api.post('/food/log', {
-                items: selectedItems.map(item => ({
-                    name: item.name,
-                    calories: item.calories,
-                    portion_size: `${item.multiplier}x ${item.portion_size}`,
-                    confidence_score: item.confidence_score
-                })),
-                image_url: "mock_url_for_now" // The server creates URL but we should probably upload separate or handle it. 
-                // For MVP, server saves image on 'analyze', but ideally 'log' should reference it. 
-                // We'll just send items for now as per schema.
-            });
-            navigate('/');
-        } catch (err) {
-            console.error("Save failed", err);
-            alert("Failed to save log");
-        }
-    };
-
     return (
-        <div className="min-h-screen bg-gray-900 text-white pb-20">
-            {/* Camera View / Image Preview */}
-            <div className="relative h-96 bg-black flex items-center justify-center overflow-hidden">
-                {image ? (
-                    <img src={image} alt="Capture" className="w-full h-full object-cover" />
+        <div className="h-screen flex flex-col relative bg-black">
+            {/* Header / Top Bar */}
+            <div className="absolute top-0 left-0 right-0 z-20 p-4 flex justify-between items-center bg-gradient-to-b from-black/80 to-transparent">
+                <h1 className="text-white font-semibold shadow-black drop-shadow-md">Scan Meal</h1>
+                <button className="p-2 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md text-white">
+                    <Zap className="h-5 w-5" />
+                </button>
+            </div>
+
+            {/* Main Content Area (Camera Viewport Placeholder) */}
+            <div className="flex-1 relative flex items-center justify-center bg-gray-900 overflow-hidden">
+                {imagePreview ? (
+                    <img
+                        src={imagePreview}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                    />
                 ) : (
-                    <div className="text-gray-500 flex flex-col items-center">
-                        <Camera className="h-16 w-16 mb-2" />
-                        <p>Tap to capture</p>
+                    <div className="text-center p-8">
+                        <div className="mb-4 inline-flex h-20 w-20 items-center justify-center rounded-full bg-white/5 border border-white/10">
+                            <Camera className="h-10 w-10 text-text-muted" />
+                        </div>
+                        <p className="text-text-muted">Tap to capture or upload a meal</p>
                     </div>
                 )}
 
-                {/* File Input Overlay */}
-                <input
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    className="absolute inset-0 opacity-0 cursor-pointer"
-                    onChange={handleImageChange}
-                />
-
-                {analyzing && (
-                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                        <div className="text-center">
-                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-                            <p className="font-semibold">Analyzing Food...</p>
-                        </div>
+                {/* Overlay Scanning Frame */}
+                {!imagePreview && (
+                    <div className="absolute inset-x-12 inset-y-32 border-2 border-primary/50 rounded-3xl pointer-events-none">
+                        <div className="absolute top-0 left-0 h-8 w-8 border-t-4 border-l-4 border-primary -mt-1 -ml-1 rounded-tl-xl" />
+                        <div className="absolute top-0 right-0 h-8 w-8 border-t-4 border-r-4 border-primary -mt-1 -mr-1 rounded-tr-xl" />
+                        <div className="absolute bottom-0 left-0 h-8 w-8 border-b-4 border-l-4 border-primary -mb-1 -ml-1 rounded-bl-xl" />
+                        <div className="absolute bottom-0 right-0 h-8 w-8 border-b-4 border-r-4 border-primary -mb-1 -mr-1 rounded-br-xl" />
                     </div>
                 )}
             </div>
 
-            {/* Results */}
-            {results && (
-                <div className="p-4 bg-gray-50 rounded-t-3xl -mt-6 relative min-h-[calc(100vh-20rem)] text-gray-900">
-                    <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-6"></div>
+            {/* Bottom Action Area */}
+            <div className="absolute bottom-[90px] left-0 right-0 z-20 p-6 flex flex-col items-center gap-4 bg-gradient-to-t from-black via-black/80 to-transparent pt-20">
+                <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    className="hidden"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                />
 
-                    <h2 className="text-xl font-bold mb-4">Detected Foods</h2>
-
-                    <div className="space-y-4">
-                        {results.map((item, index) => (
-                            <div
-                                key={index}
-                                className={`p-4 rounded-xl border-2 transition-all ${item.selected ? 'border-primary bg-indigo-50' : 'border-transparent bg-white shadow-sm'
-                                    }`}
-                            >
-                                <div className="flex items-start justify-between">
-                                    <div className="flex-1" onClick={() => toggleSelect(index)}>
-                                        <h3 className="font-bold text-lg">{item.name}</h3>
-                                        <p className="text-xs text-gray-500">Confidence: {Math.round(item.confidence_score * 100)}%</p>
-                                    </div>
-                                    <button
-                                        onClick={() => toggleSelect(index)}
-                                        className={`h-6 w-6 rounded-full flex items-center justify-center border ${item.selected ? 'bg-primary border-primary text-white' : 'border-gray-300'
-                                            }`}
-                                    >
-                                        {item.selected && <Check className="h-4 w-4" />}
-                                    </button>
-                                </div>
-
-                                {item.selected && (
-                                    <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
-                                        <div>
-                                            <label className="text-xs font-medium text-gray-500 uppercase">Portion</label>
-                                            <div className="flex items-center space-x-2 mt-1">
-                                                <span className="text-sm font-medium">{item.portion_size} x</span>
-                                                <input
-                                                    type="number"
-                                                    step="0.5"
-                                                    min="0.1"
-                                                    value={item.multiplier}
-                                                    onChange={(e) => updateMultiplier(index, e.target.value)}
-                                                    className="w-16 p-1 border rounded text-center"
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="text-right">
-                                            <label className="text-xs font-medium text-gray-500 uppercase">Calories</label>
-                                            <p className="text-xl font-bold text-primary">{item.calories} <span className="text-xs font-normal text-gray-400">kcal</span></p>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        ))}
+                {imagePreview ? (
+                    <div className="flex w-full gap-3">
+                        <Button
+                            variant="secondary"
+                            className="flex-1"
+                            onClick={() => setImagePreview(null)}
+                        >
+                            Retake
+                        </Button>
+                        <Button
+                            className="flex-1"
+                            onClick={handleAnalyze}
+                            disabled={analyzing}
+                        >
+                            {analyzing ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Analyzing...
+                                </>
+                            ) : (
+                                'Analyze Meal'
+                            )}
+                        </Button>
                     </div>
-
-                    <div className="mt-8 space-y-3">
-                        <div className="flex justify-between items-center px-2">
-                            <span className="text-gray-500 font-medium">Total Estimated</span>
-                            <span className="text-2xl font-bold text-gray-900">
-                                {results.filter(i => i.selected).reduce((acc, i) => acc + i.calories, 0)} kcal
-                            </span>
-                        </div>
+                ) : (
+                    <div className="flex items-center gap-6">
+                        <button className="p-4 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md transition-all">
+                            <ImageIcon className="h-6 w-6 text-white" />
+                        </button>
 
                         <button
-                            onClick={handleSave}
-                            className="w-full bg-primary text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:bg-indigo-700 transition-colors"
+                            onClick={handleCameraClick}
+                            className="h-20 w-20 rounded-full bg-primary border-4 border-white/20 flex items-center justify-center shadow-lg shadow-primary/40 hover:scale-105 transition-transform"
                         >
-                            Log Meal
+                            <Camera className="h-8 w-8 text-white" />
+                        </button>
+
+                        <button className="p-4 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md transition-all opacity-0 pointer-events-none">
+                            <X className="h-6 w-6 text-white" />
                         </button>
                     </div>
-                </div>
-            )}
+                )}
+            </div>
         </div>
     );
-}
+};
+
+export default ScanPage;

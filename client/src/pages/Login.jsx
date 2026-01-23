@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
+import Button from '../components/ui/Button';
+import Input from '../components/ui/Input';
+import Card from '../components/ui/Card';
 
 export default function Login() {
     const [email, setEmail] = useState('');
@@ -8,61 +11,77 @@ export default function Login() {
     const { login } = useAuth();
     const navigate = useNavigate();
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setError('');
+        setLoading(true);
         try {
             await login(email, password);
             navigate('/');
         } catch (err) {
             setError('Login failed. Check credentials.');
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-            <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-xl shadow-lg">
-                <div>
-                    <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">Sign in</h2>
+        <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+            {/* Background effects */}
+            <div className="absolute top-0 left-1/2 w-96 h-96 bg-primary/20 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+
+            <Card className="max-w-md w-full relative z-10 bg-surface/50 backdrop-blur-xl border-white/10">
+                <div className="text-center mb-8">
+                    <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                        Welcome Back
+                    </h2>
+                    <p className="text-text-muted mt-2">Sign in to continue tracking</p>
                 </div>
-                <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-                    {error && <p className="text-red-500 text-center">{error}</p>}
-                    <div className="rounded-md shadow-sm -space-y-px">
-                        <div>
-                            <input
-                                type="email"
-                                required
-                                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm"
-                                placeholder="Email address"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                            />
+
+                <form className="space-y-6" onSubmit={handleSubmit}>
+                    {error && (
+                        <div className="p-3 rounded-lg bg-danger/10 border border-danger/20 text-danger text-sm text-center">
+                            {error}
                         </div>
-                        <div>
-                            <input
-                                type="password"
-                                required
-                                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-primary focus:border-primary focus:z-10 sm:text-sm"
-                                placeholder="Password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                            />
-                        </div>
+                    )}
+
+                    <div className="space-y-4">
+                        <Input
+                            type="email"
+                            required
+                            label="Email"
+                            placeholder="Email address"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                        />
+                        <Input
+                            type="password"
+                            required
+                            label="Password"
+                            placeholder="Password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                        />
                     </div>
 
-                    <div>
-                        <button
-                            type="submit"
-                            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-                        >
-                            Sign in
-                        </button>
-                    </div>
+                    <Button
+                        type="submit"
+                        className="w-full"
+                        isLoading={loading}
+                    >
+                        Sign in
+                    </Button>
                 </form>
-                <div className="text-center">
-                    <Link to="/signup" className="text-primary hover:text-indigo-500">Don't have an account? Sign up</Link>
+
+                <div className="mt-6 text-center text-sm">
+                    <span className="text-text-muted">Don't have an account? </span>
+                    <Link to="/signup" className="text-primary hover:text-primary-dark font-medium transition-colors">
+                        Sign up
+                    </Link>
                 </div>
-            </div>
+            </Card>
         </div>
     );
 }

@@ -1,107 +1,165 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import api from '../api/axios';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom'; // Using react-router-dom for navigation
+import { motion, AnimatePresence } from 'framer-motion';
+import Button from '../components/ui/Button';
+import Input from '../components/ui/Input';
+import { ChevronRight, Check } from 'lucide-react';
+// import { useAuth } from '../context/AuthContext'; // Uncomment when Auth is ready
 
-export default function Onboarding() {
+const Onboarding = () => {
     const navigate = useNavigate();
+    // const { updateUserProfile } = useAuth();
+    const [step, setStep] = useState(0);
     const [formData, setFormData] = useState({
         age: '',
-        gender: 'male',
+        gender: '',
         height: '',
         weight: '',
-        activity_level: 'sedentary',
-        goal: 'maintain',
+        goal: ''
     });
 
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
-    };
+    const steps = [
+        {
+            title: "Let's get to know you",
+            subtitle: "To calculate your personalized plan, we need a few details.",
+            fields: ['age', 'gender']
+        },
+        {
+            title: "Body Measurements",
+            subtitle: "This helps us estimate your daily energy needs.",
+            fields: ['height', 'weight']
+        },
+        {
+            title: "Your Goal",
+            subtitle: "What are you aiming for?",
+            fields: ['goal']
+        }
+    ];
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            await api.put('/users/me/profile', {
-                ...formData,
-                age: parseInt(formData.age),
-                height: parseFloat(formData.height),
-                weight: parseFloat(formData.weight)
-            });
+    const handleNext = () => {
+        if (step < steps.length - 1) {
+            setStep(step + 1);
+        } else {
+            // Submit form
+            console.log("Submitting:", formData);
             navigate('/');
-        } catch (error) {
-            console.error("Failed to update profile", error);
-            alert("Failed to save profile. Please check inputs.");
         }
     };
 
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-            <div className="sm:mx-auto sm:w-full sm:max-w-md">
-                <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-                    Tell us about yourself
-                </h2>
-                <p className="mt-2 text-center text-sm text-gray-600">
-                    This helps us calculate your calorie needs.
-                </p>
-            </div>
+        <div className="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden">
+            {/* Background blobs */}
+            <div className="absolute top-0 left-0 w-64 h-64 bg-primary/20 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+            <div className="absolute bottom-0 right-0 w-80 h-80 bg-secondary/10 rounded-full blur-3xl translate-x-1/3 translate-y-1/3" />
 
-            <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-                <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-                    <form className="space-y-6" onSubmit={handleSubmit}>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Age</label>
-                            <input type="number" name="age" required value={formData.age} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-primary focus:border-primary sm:text-sm" />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Gender</label>
-                            <select name="gender" value={formData.gender} onChange={handleChange} className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
-                                <option value="male">Male</option>
-                                <option value="female">Female</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Height (cm)</label>
-                            <input type="number" name="height" required value={formData.height} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-primary focus:border-primary sm:text-sm" />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Weight (kg)</label>
-                            <input type="number" name="weight" required value={formData.weight} onChange={handleChange} className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:ring-primary focus:border-primary sm:text-sm" />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Activity Level</label>
-                            <select name="activity_level" value={formData.activity_level} onChange={handleChange} className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
-                                <option value="sedentary">Sedentary</option>
-                                <option value="light">Light Activity</option>
-                                <option value="moderate">Moderate Activity</option>
-                                <option value="active">Active</option>
-                                <option value="very_active">Very Active</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Goal</label>
-                            <select name="goal" value={formData.goal} onChange={handleChange} className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm">
-                                <option value="lose">Lose Weight (-500 cal)</option>
-                                <option value="maintain">Maintain Weight</option>
-                                <option value="gain">Gain Weight (+500 cal)</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <button type="submit" className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
-                                Save & Continue
-                            </button>
-                        </div>
-                    </form>
+            <div className="w-full max-w-md relative z-10">
+                <div className="mb-8">
+                    <div className="flex space-x-2 mb-8">
+                        {steps.map((_, i) => (
+                            <div
+                                key={i}
+                                className={`h-1 flex-1 rounded-full transition-colors duration-300 ${i <= step ? 'bg-primary' : 'bg-surface-hover'}`}
+                            />
+                        ))}
+                    </div>
                 </div>
+
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={step}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{ duration: 0.3 }}
+                    >
+                        <h1 className="text-3xl font-bold text-white mb-2">{steps[step].title}</h1>
+                        <p className="text-text-muted mb-8">{steps[step].subtitle}</p>
+
+                        <div className="space-y-4">
+                            {step === 0 && (
+                                <>
+                                    <Input
+                                        name="age"
+                                        type="number"
+                                        placeholder="Age"
+                                        value={formData.age}
+                                        onChange={handleChange}
+                                    />
+                                    <div className="grid grid-cols-2 gap-4">
+                                        {['Male', 'Female'].map((g) => (
+                                            <button
+                                                key={g}
+                                                type="button"
+                                                onClick={() => setFormData({ ...formData, gender: g.toLowerCase() })}
+                                                className={`h-12 rounded-xl border border-white/10 font-medium transition-all ${formData.gender === g.toLowerCase()
+                                                        ? 'bg-primary text-white border-primary'
+                                                        : 'bg-surface/50 text-text-muted hover:bg-surface-hover'
+                                                    }`}
+                                            >
+                                                {g}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+
+                            {step === 1 && (
+                                <>
+                                    <Input
+                                        name="height"
+                                        type="number"
+                                        placeholder="Height (cm)"
+                                        value={formData.height}
+                                        onChange={handleChange}
+                                    />
+                                    <Input
+                                        name="weight"
+                                        type="number"
+                                        placeholder="Weight (kg)"
+                                        value={formData.weight}
+                                        onChange={handleChange}
+                                    />
+                                </>
+                            )}
+
+                            {step === 2 && (
+                                <div className="space-y-3">
+                                    {['Lose Weight', 'Maintain', 'Gain Muscle'].map((g) => (
+                                        <button
+                                            key={g}
+                                            type="button"
+                                            onClick={() => setFormData({ ...formData, goal: g })}
+                                            className={`w-full p-4 rounded-xl border border-white/10 text-left transition-all flex items-center justify-between ${formData.goal === g
+                                                    ? 'bg-primary/20 border-primary text-white'
+                                                    : 'bg-surface/50 text-text-muted hover:bg-surface-hover'
+                                                }`}
+                                        >
+                                            <span>{g}</span>
+                                            {formData.goal === g && <Check className="h-5 w-5 text-primary" />}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="mt-8 flex justify-end">
+                            <Button
+                                onClick={handleNext}
+                                className="w-full sm:w-auto"
+                            >
+                                {step === steps.length - 1 ? 'Get Started' : 'Next'}
+                                <ChevronRight className="ml-2 h-4 w-4" />
+                            </Button>
+                        </div>
+                    </motion.div>
+                </AnimatePresence>
             </div>
         </div>
     );
-}
+};
+
+export default Onboarding;
