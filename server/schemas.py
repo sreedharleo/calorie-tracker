@@ -39,12 +39,18 @@ class TokenData(BaseModel):
 class FoodItemAnalysis(BaseModel):
     name: str
     calories: int
+    protein: float # grams
+    carbs: float   # grams
+    fats: float    # grams
     portion_size: str
     confidence_score: float
 
 class FoodItemCreate(BaseModel):
     name: str
     calories: int
+    protein: Optional[float] = 0.0
+    carbs: Optional[float] = 0.0
+    fats: Optional[float] = 0.0
     portion_size: str
     confidence_score: Optional[float] = None
 
@@ -63,7 +69,11 @@ class FoodLog(BaseModel):
     user_id: int
     timestamp: datetime.datetime
     image_url: Optional[str] = None
+    image_url: Optional[str] = None
     total_calories: int
+    total_protein: float = 0.0
+    total_carbs: float = 0.0
+    total_fats: float = 0.0
     items: list[FoodItem] = []
     
     class Config:

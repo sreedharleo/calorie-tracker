@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ChevronLeft, Search, Plus, Salad, Utensils, Beef, Check } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import api from '../api/axios';
 
 const MealLogger = () => {
     const navigate = useNavigate();
@@ -20,13 +21,69 @@ const MealLogger = () => {
         portion: item.portion_size,
         icon: Utensils,
         confidence: item.confidence_score,
+        protein: item.protein,
+        carbs: item.carbs,
+        fats: item.fats,
         color: 'bg-green-100 text-green-600'
     })) : [
-        { id: 1, name: 'Chicken Caprese', calories: '740 kcal', icon: Salad, color: 'bg-orange-100 text-orange-600' },
-        { id: 2, name: 'Veggie Stir-Fry', calories: '560 kcal', icon: Utensils, color: 'bg-green-100 text-green-600' },
-        { id: 3, name: 'Beef with Broccoli', calories: '840 kcal', icon: Beef, color: 'bg-red-100 text-red-600' },
-        { id: 4, name: 'Taco Stuffed Peppers', calories: '690 kcal', icon: Utensils, color: 'bg-yellow-100 text-yellow-600' },
+        { id: 1, name: 'Chicken Caprese', calories: '740 kcal', protein: 45, carbs: 12, fats: 55, icon: Salad, color: 'bg-orange-100 text-orange-600' },
+        { id: 2, name: 'Veggie Stir-Fry', calories: '560 kcal', protein: 18, carbs: 65, fats: 22, icon: Utensils, color: 'bg-green-100 text-green-600' },
+        { id: 3, name: 'Beef with Broccoli', calories: '840 kcal', protein: 52, carbs: 35, fats: 40, icon: Beef, color: 'bg-red-100 text-red-600' },
+        { id: 4, name: 'Taco Stuffed Peppers', calories: '690 kcal', protein: 38, carbs: 45, fats: 32, icon: Utensils, color: 'bg-yellow-100 text-yellow-600' },
     ];
+    // State to track selected items (IDs)
+    const [selectedItems, setSelectedItems] = useState(new Set());
+    const [isLogging, setIsLogging] = useState(false);
+
+    const toggleSelection = (id) => {
+        setSelectedItems(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(id)) {
+                newSet.delete(id);
+            } else {
+                newSet.add(id);
+            }
+            return newSet;
+        });
+    };
+
+    const handleLogMeal = async () => {
+        setIsLogging(true);
+        try {
+            // Determine items to log: if selection exists, log selected. Else, log all.
+            const hasSelection = selectedItems.size > 0;
+            const itemsToProcess = hasSelection
+                ? mealsToDisplay.filter(meal => selectedItems.has(meal.id))
+                : mealsToDisplay;
+
+            const itemsToLog = itemsToProcess.map(meal => {
+                // Parse calories string "740 kcal" -> 740
+                const calories = parseInt(meal.calories.replace(/[^0-9]/g, ''), 10);
+                return {
+                    name: meal.name,
+                    calories: calories || 0,
+                    protein: meal.protein || 0.0,
+                    carbs: meal.carbs || 0.0,
+                    fats: meal.fats || 0.0,
+                    portion_size: meal.portion || "1 serving",
+                    confidence_score: meal.confidence || 0.0
+                };
+            });
+
+            const payload = {
+                image_url: scannedImage || null, // Best effort passing base64 or null
+                items: itemsToLog
+            };
+
+            await api.post('/food/log', payload);
+            navigate('/'); // Redirect to Dashboard
+        } catch (error) {
+            console.error("Failed to log meal:", error);
+            alert("Failed to log meal. Please try again.");
+        } finally {
+            setIsLogging(false);
+        }
+    };
 
     return (
         <div className="min-h-screen bg-background pb-24 px-6 pt-8">
@@ -95,8 +152,13 @@ const MealLogger = () => {
                                     </p>
                                 </div>
                             </div>
-                            <button className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-400 hover:bg-primary hover:text-white">
-                                <Plus className="h-4 w-4" />
+                            <button
+                                onClick={() => toggleSelection(meal.id)}
+                                className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${selectedItems.has(meal.id)
+                                    ? 'bg-secondary text-white'
+                                    : 'bg-gray-100 text-gray-400 hover:bg-primary hover:text-white'
+                                    }`}>
+                                {selectedItems.has(meal.id) ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
                             </button>
                         </motion.div>
                     ))}
@@ -104,9 +166,13 @@ const MealLogger = () => {
             </div>
 
             {/* Log Meal Button */}
-            <div className="fixed bottom-8 left-0 right-0 px-6">
-                <button className="w-full rounded-full bg-secondary py-4 font-semibold text-white shadow-lg transition-transform active:scale-95 hover:bg-opacity-90">
-                    Log meal
+            {/* Located higher up to avoid mobile nav (approx bottom-24 or bottom-28) */}
+            <div className="fixed bottom-24 left-0 right-0 px-6 z-50">
+                <button
+                    onClick={handleLogMeal}
+                    disabled={isLogging}
+                    className="w-full rounded-2xl bg-secondary py-4 font-semibold text-white shadow-xl shadow-secondary/20 transition-all active:scale-95 hover:bg-opacity-90 disabled:opacity-70 disabled:cursor-not-allowed">
+                    {isLogging ? 'Logging...' : (selectedItems.size === 0 ? 'Log all meals' : `Log ${selectedItems.size} meal${selectedItems.size !== 1 ? 's' : ''}`)}
                 </button>
             </div>
         </div>

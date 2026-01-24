@@ -28,6 +28,9 @@ def analyze_image(image_bytes: bytes):
     Return a JSON array where each object has these fields:
     - name: string (name of the food)
     - calories: integer (estimated calories)
+    - protein: float (grams)
+    - carbs: float (grams)
+    - fats: float (grams)
     - portion_size: string (e.g., "1 cup", "100g", "1 slice")
     - confidence_score: float (0.0 to 1.0)
     

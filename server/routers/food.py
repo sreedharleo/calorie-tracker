@@ -54,12 +54,18 @@ async def log_food(
 ):
     # Calculate total
     total_calories = sum(item.calories for item in log_data.items)
+    total_protein = sum(item.protein for item in log_data.items)
+    total_carbs = sum(item.carbs for item in log_data.items)
+    total_fats = sum(item.fats for item in log_data.items)
     
     # Create Log
     db_log = models.FoodLog(
         user_id=current_user.id,
         image_url=log_data.image_url,
         total_calories=total_calories,
+        total_protein=total_protein,
+        total_carbs=total_carbs,
+        total_fats=total_fats,
         timestamp=datetime.datetime.utcnow()
     )
     db.add(db_log)
@@ -72,6 +78,9 @@ async def log_food(
             log_id=db_log.id,
             name=item.name,
             calories=item.calories,
+            protein=item.protein,
+            carbs=item.carbs,
+            fats=item.fats,
             portion_size=item.portion_size,
             confidence_score=item.confidence_score
         )

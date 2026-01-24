@@ -1,12 +1,21 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-const DailyNutritionCard = () => {
+const DailyNutritionCard = ({ totals = { calories: 0, protein: 0, carbs: 0, fats: 0 } }) => {
+    // Determine progress based on arbitrary goals (could come from user profile)
+    // Goals: 2000 kcal, 150g Protein, 250g Carbs, 65g Fats
+    const goals = {
+        calories: 2000,
+        protein: 150,
+        carbs: 250,
+        fats: 65
+    };
+
     const nutrients = [
-        { label: 'Calories', value: '2000 kcal', progress: 75, color: 'bg-primary' },
-        { label: 'Protein', value: '35%', progress: 35, color: 'bg-teal-400' },
-        { label: 'Carbs', value: '50%', progress: 50, color: 'bg-secondary' },
-        { label: 'Fats', value: '15%', progress: 15, color: 'bg-slate-500' },
+        { label: 'Calories', value: `${Math.round(totals.calories || 0)} kcal`, progress: Math.min(100, ((totals.calories || 0) / goals.calories) * 100), color: 'bg-primary' },
+        { label: 'Protein', value: `${Math.round(totals.protein || 0)}g`, progress: Math.min(100, ((totals.protein || 0) / goals.protein) * 100), color: 'bg-teal-400' },
+        { label: 'Carbs', value: `${Math.round(totals.carbs || 0)}g`, progress: Math.min(100, ((totals.carbs || 0) / goals.carbs) * 100), color: 'bg-secondary' },
+        { label: 'Fats', value: `${Math.round(totals.fats || 0)}g`, progress: Math.min(100, ((totals.fats || 0) / goals.fats) * 100), color: 'bg-slate-500' },
     ];
 
     return (

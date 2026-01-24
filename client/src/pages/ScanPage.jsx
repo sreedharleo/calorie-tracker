@@ -36,11 +36,7 @@ const ScanPage = () => {
         formData.append('file', selectedFile);
 
         try {
-            const response = await api.post('/food/analyze', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            });
+            const response = await api.post('/food/analyze', formData);
             console.log("Analysis result:", response.data);
             navigate('/log-meal', { state: { analyzedData: response.data, image: imagePreview } });
         } catch (error) {
@@ -64,11 +60,19 @@ const ScanPage = () => {
             {/* Main Content Area (Camera Viewport Placeholder) */}
             <div className="flex-1 relative flex items-center justify-center bg-gray-900 overflow-hidden">
                 {imagePreview ? (
-                    <img
-                        src={imagePreview}
-                        alt="Preview"
-                        className="w-full h-full object-cover"
-                    />
+                    <div className="relative w-full h-full">
+                        <img
+                            src={imagePreview}
+                            alt="Preview"
+                            className="w-full h-full object-contain"
+                        />
+                        {/* Scanning Laser Effect */}
+                        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                            <div className="w-full h-[2px] bg-primary/80 shadow-[0_0_15px_4px_rgba(46,139,87,0.6)] absolute top-0 left-0 animate-scan z-10"></div>
+                            {/* Optional: subtle gradient overlay that follows the laser? */}
+                            <div className="w-full h-32 bg-gradient-to-b from-primary/20 to-transparent absolute top-0 left-0 animate-scan -translate-y-full"></div>
+                        </div>
+                    </div>
                 ) : (
                     <div className="text-center p-8">
                         <div className="mb-4 inline-flex h-20 w-20 items-center justify-center rounded-full bg-white/5 border border-white/10">
@@ -78,7 +82,7 @@ const ScanPage = () => {
                     </div>
                 )}
 
-                {/* Overlay Scanning Frame */}
+                {/* Overlay Scanning Frame - Only show when NOT previewing or maybe keep as guide? */}
                 {!imagePreview && (
                     <div className="absolute inset-x-12 inset-y-32 border-2 border-primary/50 rounded-3xl pointer-events-none">
                         <div className="absolute top-0 left-0 h-8 w-8 border-t-4 border-l-4 border-primary -mt-1 -ml-1 rounded-tl-xl" />

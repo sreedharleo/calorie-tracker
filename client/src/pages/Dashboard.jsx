@@ -2,10 +2,52 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import DailyNutritionCard from '../components/Dashboard/DailyNutritionCard';
 import SuggestedActivities from '../components/Dashboard/SuggestedActivities';
+import FoodHistoryList from '../components/Dashboard/FoodHistoryList';
 import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import api from '../api/axios';
 
 const Dashboard = () => {
     const navigate = useNavigate();
+    const [foodLogs, setFoodLogs] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [totals, setTotals] = useState({
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fats: 0
+    });
+
+    useEffect(() => {
+        const fetchHistory = async () => {
+            try {
+                const response = await api.get('/food/history');
+                setFoodLogs(response.data);
+
+                // Calculate today's totals
+                const today = new Date().toDateString();
+                const todayLogs = response.data.filter(log => new Date(log.timestamp).toDateString() === today);
+
+                const newTotals = todayLogs.reduce((acc, log) => {
+                    return {
+                        calories: acc.calories + (log.total_calories || 0),
+                        protein: acc.protein + (log.total_protein || 0),
+                        carbs: acc.carbs + (log.total_carbs || 0),
+                        fats: acc.fats + (log.total_fats || 0)
+                    };
+                }, { calories: 0, protein: 0, carbs: 0, fats: 0 });
+
+                setTotals(newTotals);
+
+            } catch (error) {
+                console.error("Failed to fetch food history:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchHistory();
+    }, []);
 
     return (
         <div className="min-h-screen bg-background pb-24 px-6 pt-12">
@@ -22,7 +64,16 @@ const Dashboard = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
             >
-                <DailyNutritionCard />
+                <DailyNutritionCard totals={totals} />
+            </motion.div>
+
+            {/* Food History List */}
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+            >
+                <FoodHistoryList foodLogs={foodLogs} />
             </motion.div>
 
             {/* Suggested Activities */}

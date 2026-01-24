@@ -29,6 +29,9 @@ class FoodLog(Base):
     timestamp = Column(DateTime, default=datetime.datetime.utcnow)
     image_url = Column(String, nullable=True)
     total_calories = Column(Integer, default=0)
+    total_protein = Column(Float, default=0.0)
+    total_carbs = Column(Float, default=0.0)
+    total_fats = Column(Float, default=0.0)
     
     items = relationship("FoodItem", back_populates="log")
     user = relationship("User", back_populates="logs")
@@ -40,6 +43,9 @@ class FoodItem(Base):
     log_id = Column(Integer, ForeignKey("food_logs.id"))
     name = Column(String)
     calories = Column(Integer)
+    protein = Column(Float, default=0.0)
+    carbs = Column(Float, default=0.0)
+    fats = Column(Float, default=0.0)
     portion_size = Column(String, nullable=True) # e.g. "1 cup", "100g"
     confidence_score = Column(Float, nullable=True)
 
