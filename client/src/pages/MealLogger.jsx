@@ -71,7 +71,7 @@ const MealLogger = () => {
             });
 
             const payload = {
-                image_url: scannedImage || null, // Best effort passing base64 or null
+                image_url: location.state?.serverImageUrl || scannedImage || null, // Prefer server URL
                 items: itemsToLog
             };
 

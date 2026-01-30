@@ -16,11 +16,12 @@ const ScanPage = () => {
         const file = e.target.files[0];
         if (file) {
             setSelectedFile(file);
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setImagePreview(reader.result);
-            };
-            reader.readAsDataURL(file);
+            // Free up memory if there was a previous preview
+            if (imagePreview && imagePreview.startsWith('blob:')) {
+                URL.revokeObjectURL(imagePreview);
+            }
+            const objectUrl = URL.createObjectURL(file);
+            setImagePreview(objectUrl);
         }
     };
 
@@ -38,7 +39,14 @@ const ScanPage = () => {
         try {
             const response = await api.post('/food/analyze', formData);
             console.log("Analysis result:", response.data);
-            navigate('/log-meal', { state: { analyzedData: response.data, image: imagePreview } });
+            const { items, image_url } = response.data;
+            navigate('/log-meal', {
+                state: {
+                    analyzedData: items,
+                    image: imagePreview,
+                    serverImageUrl: image_url
+                }
+            });
         } catch (error) {
             console.error("Analysis failed:", error);
             alert("Failed to analyze image. Please try again.");
