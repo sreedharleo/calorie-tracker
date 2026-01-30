@@ -67,7 +67,7 @@ A modern, mobile-first calorie tracking application that uses AI to estimate cal
 
 2. **Start the Frontend** (from `client/` directory)
    ```bash
-   npm run dev
+   npm run devd
    ```ac 
    App runs at `http://localhost:5173`.
 
