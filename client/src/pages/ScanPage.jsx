@@ -3,6 +3,8 @@ import { Camera, Image as ImageIcon, X, Zap, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import imageCompression from 'browser-image-compression';
+import { storage } from '../firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 
@@ -52,18 +54,26 @@ const ScanPage = () => {
         if (!selectedFile) return;
 
         setAnalyzing(true);
-        const formData = new FormData();
-        formData.append('file', selectedFile);
-
         try {
-            const response = await api.post('/food/analyze', formData);
+            // 1. Upload to Firebase
+            const filename = `${Date.now()}-${selectedFile.name}`;
+            const storageRef = ref(storage, `images/${filename}`);
+            const snapshot = await uploadBytes(storageRef, selectedFile);
+            const downloadURL = await getDownloadURL(snapshot.ref);
+
+            console.log("Image uploaded:", downloadURL);
+
+            // 2. Send URL to Backend
+            const response = await api.post('/food/analyze', { image_url: downloadURL });
             console.log("Analysis result:", response.data);
+
             const { items, image_url } = response.data;
+
             navigate('/log-meal', {
                 state: {
                     analyzedData: items,
                     image: imagePreview,
-                    serverImageUrl: image_url
+                    serverImageUrl: downloadURL // Use the firebase URL
                 }
             });
         } catch (error) {
