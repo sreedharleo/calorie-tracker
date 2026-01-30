@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Camera, Image as ImageIcon, X, Zap, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
+import imageCompression from 'browser-image-compression';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 
@@ -12,16 +13,34 @@ const ScanPage = () => {
     const fileInputRef = useRef(null);
     const navigate = useNavigate();
 
-    const handleFileChange = (e) => {
+    const handleFileChange = async (e) => {
         const file = e.target.files[0];
         if (file) {
-            setSelectedFile(file);
-            // Free up memory if there was a previous preview
-            if (imagePreview && imagePreview.startsWith('blob:')) {
-                URL.revokeObjectURL(imagePreview);
+            try {
+                const options = {
+                    maxSizeMB: 1,
+                    maxWidthOrHeight: 1920,
+                    useWebWorker: true,
+                    initialQuality: 0.8,
+                };
+
+                const compressedFile = await imageCompression(file, options);
+
+                setSelectedFile(compressedFile);
+
+                // Free up memory if there was a previous preview
+                if (imagePreview && imagePreview.startsWith('blob:')) {
+                    URL.revokeObjectURL(imagePreview);
+                }
+                const objectUrl = URL.createObjectURL(compressedFile);
+                setImagePreview(objectUrl);
+            } catch (error) {
+                console.error("Compression failed:", error);
+                // Fallback to original file
+                setSelectedFile(file);
+                const objectUrl = URL.createObjectURL(file);
+                setImagePreview(objectUrl);
             }
-            const objectUrl = URL.createObjectURL(file);
-            setImagePreview(objectUrl);
         }
     };
 
