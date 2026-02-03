@@ -79,7 +79,8 @@ const ScanPage = () => {
             });
         } catch (error) {
             console.error("Analysis failed:", error);
-            alert("Failed to analyze image. Please try again.");
+            const errorMessage = error.response?.data?.detail || error.message || "Unknown error occurred";
+            alert(`Failed to analyze image: ${errorMessage}`);
         } finally {
             setAnalyzing(false);
         }
