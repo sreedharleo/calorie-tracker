@@ -1,6 +1,8 @@
 import google.generativeai as genai
 import os
 import json
+import io
+from PIL import Image
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -16,9 +18,32 @@ def analyze_image(image_bytes: bytes):
     """
     Analyzes an image using Google Gemini API to identify food items,
     calories, portion sizes, and confidence scores.
+    Optimizes image size before sending to API to save memory/bandwidth.
     """
     if not api_key:
         raise ValueError("Gemini API Key is missing. Please set GEMINI_API_KEY in .env file.")
+
+    # 1. Optimize Image
+    try:
+        image = Image.open(io.BytesIO(image_bytes))
+        
+        # Convert to RGB if needed (e.g. for PNGs with alpha)
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
+            
+        # Resize if too large (max 1024x1024) while maintaining aspect ratio
+        max_size = (1024, 1024)
+        image.thumbnail(max_size, Image.LANCZOS)
+        
+        # Compress to JPEG
+        output_buffer = io.BytesIO()
+        image.save(output_buffer, format='JPEG', quality=85, optimize=True)
+        optimized_image_bytes = output_buffer.getvalue()
+        
+    except Exception as e:
+        print(f"Error optimizing image: {e}")
+        # Fallback to original bytes if optimization fails
+        optimized_image_bytes = image_bytes
 
     model = genai.GenerativeModel('gemini-flash-latest')
 
@@ -40,8 +65,8 @@ def analyze_image(image_bytes: bytes):
     try:
         # Gemini accepts bytes directly for image parts
         image_part = {
-            "mime_type": "image/jpeg", # Assuming JPEG or PNG, Gemini handles common formats
-            "data": image_bytes
+            "mime_type": "image/jpeg", 
+            "data": optimized_image_bytes
         }
 
         response = model.generate_content([prompt, image_part])

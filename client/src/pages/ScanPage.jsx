@@ -20,10 +20,11 @@ const ScanPage = () => {
         if (file) {
             try {
                 const options = {
-                    maxSizeMB: 1,
-                    maxWidthOrHeight: 1920,
+                    maxSizeMB: 0.5,
+                    maxWidthOrHeight: 1024,
                     useWebWorker: true,
-                    initialQuality: 0.8,
+                    initialQuality: 0.6,
+                    alwaysKeepResolution: true
                 };
 
                 const compressedFile = await imageCompression(file, options);

@@ -61,7 +61,7 @@ A modern, mobile-first calorie tracking application that uses AI to estimate cal
 1. **Start the Backend** (from `server/` directory)
    ```bash
    # Ensure venv is active
-   uvicorn main:app --reload
+  
    ```
    Server runs at `http://localhost:8000`.
 

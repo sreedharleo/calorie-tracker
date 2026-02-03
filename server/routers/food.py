@@ -18,26 +18,28 @@ UPLOAD_DIR = "uploads"
 if not os.path.exists(UPLOAD_DIR):
     os.makedirs(UPLOAD_DIR)
 
-@router.post("/food/analyze", response_model=list[schemas.FoodItemAnalysis])
-async def analyze_food_image(file: UploadFile = File(...), current_user: models.User = Depends(auth.get_current_user)):
-    # 1. Read file content once
-    content = await file.read()
-    
-    # 2. Save file
-    file_extension = file.filename.split(".")[-1]
-    filename = f"{uuid.uuid4()}.{file_extension}"
-    file_path = os.path.join(UPLOAD_DIR, filename)
-    
-    with open(file_path, "wb") as buffer:
-        buffer.write(content)
+import requests
+
+@router.post("/food/analyze", response_model=schemas.FoodAnalysisResponse)
+async def analyze_food_image(request: schemas.AnalyzeRequest, current_user: models.User = Depends(auth.get_current_user)):
+    # 1. Download image from URL
+    try:
+        response = requests.get(request.image_url)
+        response.raise_for_status()
+        content = response.content
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to download image: {str(e)}")
         
-    # 3. Process image with Gemini API
+    # 2. Process image with Gemini API
     try:
         # Call Gemini Service
         from services import gemini
         detected_foods = gemini.analyze_image(content)
         
-        return detected_foods
+        return schemas.FoodAnalysisResponse(
+            items=detected_foods,
+            image_url=request.image_url
+        )
         
     except Exception as e:
         # Log error to file for debugging

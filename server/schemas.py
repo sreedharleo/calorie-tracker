@@ -45,6 +45,13 @@ class FoodItemAnalysis(BaseModel):
     portion_size: str
     confidence_score: float
 
+class AnalyzeRequest(BaseModel):
+    image_url: str
+
+class FoodAnalysisResponse(BaseModel):
+    items: list[FoodItemAnalysis]
+    image_url: str
+
 class FoodItemCreate(BaseModel):
     name: str
     calories: int
@@ -68,7 +75,6 @@ class FoodLog(BaseModel):
     id: int
     user_id: int
     timestamp: datetime.datetime
-    image_url: Optional[str] = None
     image_url: Optional[str] = None
     total_calories: int
     total_protein: float = 0.0
